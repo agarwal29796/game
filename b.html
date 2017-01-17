@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#selector { 
+background : black;
+width : 1200px;
+height : 600px;
+left : 20px ;
+top : 20px ;
+border : 2px solid blue;
+ }
+ #addBack {
+ border : 1px solid green;
+ width : 50px;
+ height : 50px ;
+ position : absolute;
+ left : 300px;
+ top : 300px;
+ background : yellow;
+ border-radius : 50px ; 	
+ }
+ 
+  #addBack1 {
+ border : 1px solid green;
+ width : 50px;
+ height : 50px ;
+ position : absolute;
+ left : 200px;
+ top : 200px;
+ background : yellow;
+ border-radius : 50px ; 	
+ }
+   #addBackE {
+ border : 1px solid red;
+ width : 50px;
+ height : 50px ;
+ position : absolute;
+ left : 1000px;
+ top : 300px;
+ background : yellow;
+ border-radius : 50px ;
+  }
+   #addBackE1 {
+ border : 1px solid red;
+ width : 50px;
+ height : 50px ;
+ position : absolute;
+ left : 500px;
+ top : 500px;
+ background : yellow;
+ border-radius : 50px ; 	
+ }
+ .cross { 
+z-index : 10;
+  }
+ .crossE {
+ z-index : 10;	
+ } 
+</style>
+</head>
+<body>
+<div id = "selector" onclick = "selection(event , this)" onmousemove="mouseMover(event , this)">
+	<div id = "addBack"></div>
+	<div id = "add"></div>
+    <div id = "addBack1"></div>
+	<div id = "add1"></div>
+	<div id = "addE"></div>
+	<div id = "addBackE"></div>
+	<div id = "addE1"></div>
+	<div id = "addBackE1"></div>
+</div>
+<button onclick="start(event)">Start</button>
+<button onclick = "radioMotion(global.crossSelectedElements)">radio Motion</button>
+<script>
+//window.onclick = function(event){console.log(event.clientX) ;} ;  
+
+function start(event){
+setInterval(function(){
+	append(event) ; 
+    appendEnemy(event) ; 
+} , 1000) ;  
+}
+
+var global = {
+current : 1 , 	
+left : 300 , 
+top :  300 , 
+crossSelected : false , 
+crossSelectedElements : [] , 
+getLeft  : function(){
+return parseInt(this.left + 50**Math.random()) ; 
+} , 
+getTop : function(){
+return parseInt(this.top + 50*Math.random()) ; 
+
+}	
+} ;
+//------------------- THE REAL DAMN INITIALIZE HERE (WORKING WITH PROXY OBJECT) ----------------------------------------
+
+var arrayChangeHandler = {
+  get: function(target, property) {
+    return target[property];
+  },
+  set: function(target, property, value, receiver) {
+   if(property === 'motionChanged'){
+   	elementCrossingDetection(value) ; 
+   } 
+ 
+    target[property] = value;
+    // you have to return true to accept the changes
+    return true;
+  }
+};
+
+var red = new Proxy({motionChanged : false , arr : []}, arrayChangeHandler);
+var green = new Proxy({motionChanged : false , arr : []} , arrayChangeHandler); 
+
+//--------------------------------------------------------------------------------------------------------------------
+
+//---------------------------------------------------------------BIGGEST BULLSHIT OF THE TIME---------------
+var cancelElement = function(){
+
+} ; 
+
+//--------------------------------------------------------------------------------------------------------
+
+//---------------------------------------------------------------Element Crossing detection --------------------------
+function elementCrossingDetection(id){
+var r1 = green.arr[Number(id.split('cross')[1])] ;
+for(var i = 1  ; i < red.arr.length ; i++)
+{
+var r2 = red.arr[i]  ; 
+if(!r2.disabled){ 	
+if(!(r2.left > (r1.left + r1.width) || (r2.left + r2.width) < r1.left || r2.top > (r1.top + r1.height) || (r2.top + r2.height) < r1.top))
+{
+r2.disabled = true ; 
+r1.disabled = true ; 
+removeElement(r1.id , r2.id) ; 	
+//console.log('HEY') ; 
+}
+}
+}	
+
+}
+function removeElement(id1 , id2){
+	//console.log(id1 + ' ' + id2) ; 
+ var elem1 = document.getElementById(id1);
+ //console.log(elem1) ; 
+ elem1.parentElement.removeChild(elem1);	
+  var elem2 = document.getElementById(id2);
+  //console.log(elem2) ; 
+ elem2.parentElement.removeChild(elem2);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+var enemy = {
+current : 1 , 	
+left : 1000 , 
+top :  300 , 
+crossSelected : false , 
+crossSelectedElements : [] , 
+getLeft  : function(){
+return parseInt(this.left + 50**Math.random()) ; 
+} , 
+getTop : function(){
+return parseInt(this.top + 50*Math.random()) ; 
+
+}	
+} ; 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var startX = 0 , startY = 0 , x = 0 , y = 0 , nElement = null ;
+var selection = function(event , element){
+if(global.crossSelected)
+{
+for(let i = 0 ; i < global.crossSelectedElements.length ; i++)
+{
+var ele = document.getElementById(global.crossSelectedElements[i]) ; 
+translate(ele , (event.clientX - 7) , (event.clientY - 7)) ;   
+ele.style.border = 'none'; 	 
+}
+//radioMotion(global.crossSelectedElements) ; 
+global.crossSelected = false ; 
+global.crossSelectedElements = [] ; 
+}
+else{	
+if(nElement!==null){
+    selectElement(nElement.style) ; 
+	element.removeChild(nElement) ; 
+	nElement = null ; 
+	element.style.cursor = 'default' ; 
+
+}	
+else{
+startX = x ; 
+startY = y ; 
+nElement = document.createElement('div') ; 
+nElement.setAttribute("style" , "border : 1px solid green ; background : white ; opacity : .5 ; position : absolute") ;
+nElement.style.left = x + 'px' ; 
+nElement.style.top = y + 'px' ; 
+element.appendChild(nElement) ;
+element.style.cursor = 'crosshair' ;  
+}
+} 
+} ; 
+
+var mouseMover = function(event , element){
+	setMousePosition(event) ; 
+	if(nElement !== null){
+		nElement.style.width = Math.abs(x-startX) + 'px' ; 
+		nElement.style.height = Math.abs(y - startY) + 'px' ; 
+		nElement.style.left = Math.abs(x-startX < 0) ? x + 'px' : startX + 'px' ; 
+		nElement.style.top = Math.abs(y-startY < 0) ? y + 'px' : startY + 'px' ; 
+	}
+} ; 
+
+ function setMousePosition(event){
+ 	var ev = event || window.event ; 
+ 	if(ev.pageX){
+ 		x = ev.pageX + window.pageXOffset ; 
+ 		y = ev.pageY + window.pageYOffset ; 
+ 	}
+ 	else if(ev.clietX){
+ 		x = ev.clientX + document.body.scrollLeft ; 
+ 		y = ev.clientY + document.body.scrollTop ; 
+ 	}
+ }
+
+
+var selectElement = function(style){
+var nodes = document.getElementsByClassName('cross'); 
+for(let i = 0 ; i < nodes.length ; i++)
+{   
+	let local = nodes[i].style ; 
+	if((local.left >= style.left)&&(local.top >= style.top)&&((getNumber(style.left) + getNumber(style.width)) >= (getNumber(local.left) + getNumber(local.width)))&&((getNumber(style.top) + getNumber(style.height)) >= (getNumber(local.top) + getNumber(local.height))))
+	{
+     local.border = '1px solid blue' ; 
+     local.padding = '5px' ;
+     local.borderRadius = '50px'  ;
+     global.crossSelectedElements.push(nodes[i].id) ; 
+	}
+}
+if(global.crossSelectedElements.length)
+	global.crossSelected = true ;
+} ; 
+
+
+
+/*function translate(element , X , Y){
+	var left = parseInt(css(element , 'left') , 10) , 
+	array = [] ,
+	top = parseInt(css(element ,'top') , 10) ,
+	dx = left - X , 
+	dy = top - y , 
+	i = 1 , 
+	count = 20 , 
+	delay = 40 ;
+	function loop(){
+		if(i >= count){ 
+		  console.log('real left ' + element.style.left) ; 
+		  radioMotion(element) ;
+          array = [] ; 
+          return ; 
+		 }
+		i++ ; 
+		element.style.left = (left - (dx*i/count)).toFixed(0) + 'px' ; 
+		element.style.top = (top - (dy*i/count)).toFixed(0) + 'px'  ;
+		setTimeout(loop , delay) ; 
+	}
+	loop() ; 
+
+}
+*/
+function translate(element , Xc , Yc){
+	//---------------------------------------------------THE DAMN THING -------------------------------------------------------------
+	if(element.motion){ 	
+    element.setAttribute("meta_motion" , 'true,' + Xc + ','+ Yc + ''); 
+    element.motion = false ; 
+    //console.log(element.attributes['meta_motion'].value) ; 
+    return ; 
+	}
+	//--------------------------------------------------------------------------------------------------------------------------------
+	var Xa = parseInt(css(element , 'left') , 10) , 
+	array = [] ,
+	Ya = parseInt(css(element ,'top') , 10) ,
+	dx = Xa - Xc , 
+	dy = Ya - Yc , 
+	i = 1 , 
+	x , 
+	delay = 40 ;
+    element.motion = true ; 
+	function loop(){
+	//---------------------------------------------I AM A DAMN THING TOO-------------------------------------------------------------
+		if(!element.motion)                                                             //-----MOTION BREAKAGE IN THE MID OF THE LOOP 
+		  {var localArr = element.attributes['meta_motion'].value.split(',') ; 
+		  if(Boolean(localArr[0]))
+		  {
+		  	element.setAttribute("meta_motion" , "false," + localArr[1] + "," + localArr[2] + "") ; 
+            translate(element , Number(localArr[1]) , Number(localArr[2])) ;    
+            return  ;
+		  }	
+		  }
+    //------------------------------------------------------------------------------------------------------------------------------		   
+		if(i == Math.abs(dx)){ 
+	      element.style.top = Yc;
+	      element.motion = false ;
+
+	     //--------------------JUST FOR RADIO MOTION NOTHING TO DO WITH IT ---------------------------------------------------------
+	      if(element.radioMotion)
+	      { 
+	      	element.radioMotion = false ; 
+	      	return ; 
+	      }
+	      else 
+		  radioMotion(element , 50) ;
+          return ; 
+		 }
+		 //-------------------------------------------------------------------------------------------------------------------------
+		x = (Xa - Math.sign(dx)*i) ; 
+		element.style.left = parseInt(x) + 'px' ; 
+		element.style.top =  parseInt(Ya + (dy/dx)*(x - Xa)) + 'px' ; 
+        green.arr[Number(element.id.split('cross')[1])].left = element.style.left ; 
+        green.arr[Number(element.id.split('cross')[1])].top = element.style.top ;
+        green.motionChanged = element.id ; 
+		i++ ; 
+		setTimeout(loop , delay) ; 
+	}
+	loop() ; 
+
+}
+
+function css(element , property){
+	return window.getComputedStyle(element , null).getPropertyValue(property) ; 
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var move = function(event , element){
+var self = element.getAttribute('id').split("cross")[1] ;
+if(event.clientX !== 0){  	
+document.getElementById('cross' + self).style.left = event.clientX + 'px' ; 
+document.getElementById('cross' + self).style.top = event.clientY + 'px' ; 
+}
+else{
+	event.clientX = '5px' ; 
+	event.clientY = '5px' ;
+}
+} ; 
+
+var append = function(event){
+//var addBack = document.getElementById('addBack') ; 
+//var addBack1 = document.getElementById('addBack1') ;
+if(global.current <= 700){
+var node = document.createElement("div") ;
+var node1 = document.createElement("div") ; 
+var a = global.current ; 
+node.setAttribute("id" , "cross" + global.current) ;
+global.current++  ;  
+node1.setAttribute("id" , "cross" + global.current) ;
+global.current++  ;  
+node.setAttribute("class" , "cross") ; 
+node1.setAttribute("class" , "cross") ; 
+node.setAttribute("motion" , false) ; 
+node1.setAttribute("motion" ,  false) ; 
+node.setAttribute("radioMotion" , false) ; 
+node1.setAttribute("radioMotion" ,  false) ;
+//node.setAttribute("metaMotion" , true) ; 
+//node1.setAttribute("metaMotion" , true) ;  
+node.setAttribute("style" , "color : green ; position : absolute ; width : 10px ; height : 10px") ;
+node1.setAttribute("style" , "color : green ; position : absolute ; width : 10px ; height : 10px") ;
+node.style.left = global.getLeft() + 'px' ; 
+node.style.top = global.getTop() + 'px' ; 
+global.left = 200 ;
+global.top = 200  ;
+node.setAttribute("onchange" , "cancel(event , this)") ; 
+node.textContent = '+' ; 
+node1.textContent = '+' ; 
+ node1.style.left = global.getLeft() + 'px' ; 
+node1.style.top = global.getTop() + 'px' ; 
+document.getElementById('add').appendChild(node) ; 
+document.getElementById('add1').appendChild(node1) ; 
+//------------------------------------------------------------HA, HA LET'S GIVE IT A TRY -----------------------------
+var obj = {
+left : node.style.left , 
+top : node.style.top , 
+width : node.style.width , 
+height : node.style.height , 	
+id : node.id , 
+disabled : false
+} ; 
+var obj1 = {
+left : node1.style.left , 
+top : node1.style.top , 
+width : node1.style.width , 
+height : node1.style.height , 	
+id : node1.id , 
+disabled : false
+} ;
+green.arr[a] = obj  ; 
+green.arr[a+1] = obj1 ; 
+//green.push(obj);
+//green.push(obj1) ; 
+//--------------------------------------------------------------------------------------------------------------------
+global.left = 300 ;
+global.top = 300  ;
+}
+} ; 
+
+var appendEnemy = function(event){
+if(global.current <= 700){
+var node = document.createElement("div") ;
+var node1 = document.createElement("div") ; 
+var a = enemy.current ; 
+node.setAttribute("id" , "crossE" + enemy.current) ;
+enemy.current++  ;  
+node1.setAttribute("id" , "crossE" + enemy.current) ;
+enemy.current++  ;  
+node.setAttribute("class" , "crossE") ; 
+node1.setAttribute("class" , "crossE") ; 
+node.setAttribute("style" , "color : red ; position : absolute ; width : 10px ; height : 10px") ;
+node1.setAttribute("style" , "color : red ; position : absolute ; width : 10px ; height : 10px") ;
+node.style.left = enemy.getLeft() + 'px' ; 
+node.style.top = enemy.getTop() + 'px' ; 
+enemy.left = 500 ;
+enemy.top = 500  ;
+//node.setAttribute("ondrag" , "move(event , this)") ; 
+node.textContent = '+' ; 
+node1.textContent = '+' ; 
+document.getElementById('addE').appendChild(node) ;
+ node1.style.left = enemy.getLeft() + 'px' ; 
+node1.style.top = enemy.getTop() + 'px' ; 
+document.getElementById('addE1').appendChild(node1) ; 
+//------------------------------------------------------------YOU CANT LEFT ME BEHIND  -----------------------------
+var obj = {
+left : node.style.left , 
+top : node.style.top , 
+width : node.style.width , 
+height : node.style.height , 	
+id : node.id , 
+disabled : false
+} ; 
+var obj1 = {
+left : node1.style.left , 
+top : node1.style.top , 
+width : node1.style.width , 
+height : node1.style.height , 	
+id : node1.id , 
+disabled : false 
+} ; 
+red.arr[a] = obj ; 
+red.arr[a+1] = obj1 ; 
+//--------------------------------------------------------------------------------------------------------------------
+enemy.left = 1000 ;
+enemy.top = 300  ; 
+}
+} ; 
+
+function cancel(event , element)
+{
+console.log('hip hip hurray') ; 	
+}
+
+/*function radioMotion(node){
+//array = global.crossSelectedElements ; 	
+var j = parseInt(10*Math.random()) ; 
+//console.log(array) ; 
+//for(let i = 0 ; i < array.length ; i++)
+//{
+//var node = document.getElementById(array[i]) ; 
+if(j%2 == 0){
+//translate(node ,(getNumber(node.style.left) + parseInt(25*Math.random())) , (getNumber(node.style.top) + parseInt(25*Math.random()))) ; 
+node.style.left = (getNumber(node.style.left) + parseInt(25*Math.random())) + 'px' ; 	
+node.style.top = (getNumber(node.style.top) + parseInt(25*Math.random())) + 'px' ; 	
+//console.log(node.id + ' ' + node.style.left) ; 
+
+}
+else if((getNumber(node.style.left) >= 25)&&(getNumber(node.style.top) >= 25)&&(j%2!== 0))
+{
+//translate(node ,(getNumber(node.style.left) - parseInt(25*Math.random())) , (getNumber(node.style.top) - parseInt(25*Math.random()))) ; 	
+node.style.left = (getNumber(node.style.left) - parseInt(25*Math.random())) + 'px' ; 	
+node.style.top = (getNumber(node.style.top) - parseInt(25*Math.random())) + 'px' ; 	
+//console.log(node.id + ' ' + node.style.left) ; 
+
+}
+//j++ ; 
+//}
+//j = 0 ;
+// global.crossSelectedElements = [] ; 
+return ; 	
+}
+*/
+function radioMotion(element, radius){	
+//array = global.crossSelectedElements ; 	
+let Mx = Math.random()  , 
+ My = Math.random()  , 
+ x = parseInt(radius*Math.random())  ,  
+ y = parseInt(Math.sqrt(radius*radius - x*x))*(Math.random()) , 
+ Xt , Yt ;  
+if(Mx <= .5)
+Xt = add(getNumber(element.style.left) , x) ;
+else
+Xt = sub(getNumber(element.style.left) , x) ; 	
+if(My <= .5)
+Yt = add(getNumber(element.style.top) , y) ; 
+else
+Yt  = sub(getNumber(element.style.top) , y) ; 	
+function add(a, b){return a + b ; }
+function sub(a , b){return a - b;  }
+//console.log(element.style.left + ' -left, ' + element.style.top + ' -top , ' + Xt  + '  Xt,' + Yt + ' Yt') ;
+element.radioMotion = true ; 
+translate(element , Xt , Yt) ; 
+return ; 	
+}
+
+function getNumber(str){
+return Number(str.split('px')[0]) ; 	
+}
+</script>
+</body>
+</html>
